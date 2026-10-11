@@ -1,6 +1,6 @@
 # KFERQ finder
 
-Find KFERQ-like motifs, the pentapeptides that target proteins to chaperone-mediated autophagy, in protein sequences or UniProt entries, and test whether they are enriched in a protein list.
+Find KFERQ-like motifs, the pentapeptides that target proteins to chaperone-mediated autophagy or endosomal microautophagy, in protein sequences or UniProt entries, and test whether they are enriched in a protein list.
 
 A static site: all analysis runs in the browser, so it can be hosted on GitHub Pages with no server. It replaces the 2018 R Shiny application described in Kirchner et al., *PLoS Biol* 2019, [doi:10.1371/journal.pbio.3000301](https://doi.org/10.1371/journal.pbio.3000301).
 

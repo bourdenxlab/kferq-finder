@@ -8,7 +8,7 @@ permalink: /about/
 
 # About KFERQ finder
 
-Chaperone-mediated autophagy (CMA) degrades proteins that carry a KFERQ-like pentapeptide. The chaperone HSC70 recognises the motif and delivers the protein to lysosomes. KFERQ finder lists these motifs in any protein and tests whether they are over-represented in a protein list.
+Proteins that carry a KFERQ-like pentapeptide can be degraded by chaperone-mediated autophagy (CMA) or endosomal microautophagy (eMI). The chaperone HSC70 recognises the motif and delivers the protein to lysosomes in CMA, or to late endosomes in eMI ([Sahu et al. 2011](https://doi.org/10.1016/j.devcel.2010.12.003)). KFERQ finder lists these motifs in any protein and tests whether they are over-represented in a protein list.
 
 ## Motif rules
 
