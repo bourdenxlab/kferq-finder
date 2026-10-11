@@ -12,11 +12,14 @@
 </head>
 <body>
   <header class="masthead">
-    <div class="wrap">
-      <a class="ribbon" href="{{ '/' | relative_url }}" aria-label="KFERQ finder, home">
-        <span class="ribbon-seq" aria-hidden="true">KETAAA<mark class="m m-C"><span class="start" data-code="C">K</span>FERQ</mark>HMDSS</span>
+    <div class="wrap masthead-inner">
+      <a class="logo" href="{{ '/' | relative_url }}">
+        <picture>
+          <source type="image/webp" srcset="{{ '/assets/img/kferq-logo.webp' | relative_url }}">
+          <img src="{{ '/assets/img/kferq-logo.png' | relative_url }}" width="640" height="521" alt="KFERQ finder home. HSC70 binds the KFERQ motif and delivers proteins to endosomal microautophagy (eMI) or chaperone-mediated autophagy (CMA).">
+        </picture>
       </a>
-      <div class="masthead-row">
+      <div class="masthead-side">
         <p class="site-title">KFERQ finder</p>
         <nav aria-label="Site">
           <a href="{{ '/' | relative_url }}"{% if page.url == '/' %} aria-current="page"{% endif %}>Finder</a>

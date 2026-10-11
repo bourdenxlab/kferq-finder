@@ -39,16 +39,13 @@ a:hover { text-decoration-thickness: 2px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
 
-/* masthead: the motif that named the family, as found in ribonuclease A */
-.masthead { border-bottom: 1px solid var(--rule); padding: 28px 0 14px; margin-bottom: 28px; }
-.ribbon { display: inline-block; text-decoration: none; padding-top: 0.5em; }
-.ribbon-seq {
-  font: 600 clamp(30px, 7vw, 56px)/1.1 var(--mono);
-  letter-spacing: 0.06em;
-  color: #b8bbc5;
-}
-.ribbon-seq mark.m { color: var(--ink); }
-.masthead-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: 6px; }
+/* masthead: logo of the two HSC70-dependent routes the motif opens */
+.masthead { border-bottom: 1px solid var(--rule); padding: 20px 0 14px; margin-bottom: 28px; }
+.masthead-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.logo { display: block; border-radius: var(--radius); }
+.logo img { display: block; height: 200px; width: auto; }
+@media (min-width: 760px) { .logo img { height: 240px; } }
+.masthead-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .site-title { margin: 0; font-size: 20px; font-weight: 700; }
 .masthead nav { display: flex; gap: 20px; font-size: 15px; }
 .masthead nav a { text-decoration: none; color: var(--ink-2); padding: 4px 0; }
@@ -172,7 +169,6 @@ mark.m { color: inherit; background: color-mix(in srgb, var(--c) 26%, white); bo
   content: attr(data-code); position: absolute; left: 0; top: -1.15em;
   font: 600 10px/1 var(--font); color: var(--ink-2); letter-spacing: 0;
 }
-.ribbon .start::before { font-size: 13px; top: -1.1em; color: var(--muted); }
 .seq-legend { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
 
 .m-C { --c: var(--c-C); }
@@ -221,6 +217,8 @@ h3.section { font-size: 16px; margin: 24px 0 6px; }
 .site-footer p { margin: 0 0 6px; max-width: 90ch; }
 
 @media (max-width: 560px) {
+  .logo img { height: 150px; }
+  .masthead-side { flex-direction: row; justify-content: space-between; width: 100%; align-items: baseline; }
   .tabs { gap: 20px; }
   .tabs button { font-size: 16px; }
   .lede { font-size: 17px; }
