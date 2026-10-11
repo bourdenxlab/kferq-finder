@@ -39,19 +39,29 @@ a:hover { text-decoration-thickness: 2px; }
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
 
-/* masthead: logo of the two HSC70-dependent routes the motif opens */
-.masthead { border-bottom: 1px solid var(--rule); padding: 20px 0 14px; margin-bottom: 28px; }
-.masthead-inner { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
-.logo { display: block; border-radius: var(--radius); }
-.logo img { display: block; height: 200px; width: auto; }
-@media (min-width: 760px) { .logo img { height: 240px; } }
-.masthead-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.site-title { margin: 0; font-size: 20px; font-weight: 700; }
-.masthead nav { display: flex; gap: 20px; font-size: 15px; }
+/* masthead: the logo and the name read as one unit; the description fills the line beside it */
+.masthead { border-bottom: 1px solid var(--rule); padding: 22px 0 20px; margin-bottom: 24px; }
+.masthead-grid {
+  display: grid; align-items: center; column-gap: 28px; row-gap: 6px;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "logo title nav" "logo desc nav";
+}
+.logo { grid-area: logo; }
+.logo img { display: block; height: 150px; width: auto; }
+.site-title { grid-area: title; align-self: end; margin: 0; font-size: 44px; line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; }
+.site-title a { text-decoration: none; }
+.site-desc { grid-area: desc; align-self: start; margin: 0; font-size: 17px; line-height: 1.45; color: var(--ink-2); max-width: 60ch; }
+.masthead nav { grid-area: nav; align-self: start; display: flex; gap: 20px; font-size: 15px; }
 .masthead nav a { text-decoration: none; color: var(--ink-2); padding: 4px 0; }
 .masthead nav a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
+@media (max-width: 760px) {
+  .masthead-grid { grid-template-columns: auto 1fr; grid-template-areas: "logo title" "logo nav" "desc desc"; column-gap: 16px; row-gap: 8px; }
+  .logo img { height: 92px; }
+  .site-title { font-size: 32px; }
+  .masthead nav { align-self: start; }
+  .site-desc { margin-top: 6px; font-size: 16px; }
+}
 
-.lede { font-size: 18px; max-width: 64ch; margin: 0 0 24px; color: var(--ink-2); }
 
 /* tabs */
 .tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; overflow-x: auto; }
@@ -217,10 +227,7 @@ h3.section { font-size: 16px; margin: 24px 0 6px; }
 .site-footer p { margin: 0 0 6px; max-width: 90ch; }
 
 @media (max-width: 560px) {
-  .logo img { height: 150px; }
-  .masthead-side { flex-direction: row; justify-content: space-between; width: 100%; align-items: baseline; }
   .tabs { gap: 20px; }
   .tabs button { font-size: 16px; }
-  .lede { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
