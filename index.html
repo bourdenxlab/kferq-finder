@@ -1,0 +1,102 @@
+---
+layout: default
+title: KFERQ finder
+---
+<p class="lede">Find KFERQ-like motifs, the pentapeptides that target proteins to chaperone-mediated autophagy, in any protein sequence or UniProt entry. Then test whether they are enriched in your protein list.</p>
+
+<div class="tabs" role="tablist" aria-label="Analysis">
+  <button role="tab" id="tab-sequences" aria-controls="panel-sequences" aria-selected="true">Sequences</button>
+  <button role="tab" id="tab-uniprot" aria-controls="panel-uniprot" aria-selected="false" tabindex="-1">UniProt IDs</button>
+  <button role="tab" id="tab-enrichment" aria-controls="panel-enrichment" aria-selected="false" tabindex="-1">Enrichment</button>
+</div>
+
+<fieldset class="classes">
+  <legend>Motif classes</legend>
+  <div id="class-chips" class="class-chips"></div>
+  <label class="toggle"><input type="checkbox" id="flag-ub"> Mark motifs that contain a lysine (can be inactivated by ubiquitination)</label>
+</fieldset>
+
+<section id="panel-sequences" role="tabpanel" aria-labelledby="tab-sequences" class="panel">
+  <label class="field-label" for="seq-input">Protein sequences</label>
+  <p class="hint" id="seq-hint">FASTA or plain amino acid sequence. Separate plain sequences with a blank line.</p>
+  <textarea id="seq-input" rows="9" spellcheck="false" autocomplete="off" aria-describedby="seq-hint" placeholder=">my protein&#10;MDVFMKGLSKAKEGVVAAAEKTKQGVAEAAGKTKEGVLYVGSKTKEGVVHGVATVAEKTKEQ"></textarea>
+  <div class="actions">
+    <button class="btn primary" id="seq-run">Find motifs</button>
+    <label class="btn">Upload FASTA<input type="file" id="seq-file" accept=".fa,.fasta,.faa,.fas,.txt" hidden></label>
+    <button class="btn quiet" id="seq-example">Try an example</button>
+  </div>
+  <div class="results" id="seq-results" aria-live="polite"></div>
+</section>
+
+<section id="panel-uniprot" role="tabpanel" aria-labelledby="tab-uniprot" class="panel" hidden>
+  <div class="field-row">
+    <div>
+      <label class="field-label" for="ids-org">Organism</label>
+      <select id="ids-org" class="org-select"></select>
+    </div>
+    <p class="hint coverage" data-for="ids-org"></p>
+  </div>
+  <label class="field-label" for="ids-input">UniProt accessions or gene names</label>
+  <p class="hint" id="ids-hint">One per line, or separated by commas or spaces. Isoforms such as P10636-8 map to the canonical entry. In protein groups such as P04406;E7EUT4, the first match is used.</p>
+  <textarea id="ids-input" rows="7" spellcheck="false" autocomplete="off" aria-describedby="ids-hint" placeholder="SNCA&#10;P04406&#10;LRRK2"></textarea>
+  <label class="toggle"><input type="checkbox" id="ids-live" checked> Look up IDs that are not in the reviewed reference table on UniProt</label>
+  <div class="actions">
+    <button class="btn primary" id="ids-run">Find motifs</button>
+    <label class="btn">Upload list<input type="file" id="ids-file" accept=".txt,.csv,.tsv" hidden></label>
+    <button class="btn quiet" id="ids-example">Try an example</button>
+  </div>
+  <div class="results" id="ids-results" aria-live="polite"></div>
+</section>
+
+<section id="panel-enrichment" role="tabpanel" aria-labelledby="tab-enrichment" class="panel" hidden>
+  <div class="field-row">
+    <div>
+      <label class="field-label" for="en-org">Organism</label>
+      <select id="en-org" class="org-select"></select>
+    </div>
+    <p class="hint coverage" data-for="en-org"></p>
+  </div>
+  <div class="two-col">
+    <div>
+      <label class="field-label" for="en-list">Your proteins</label>
+      <p class="hint">UniProt accessions or gene names, for example the hits of a screen.</p>
+      <textarea id="en-list" rows="9" spellcheck="false" autocomplete="off"></textarea>
+      <label class="btn small">Upload list<input type="file" id="en-list-file" accept=".txt,.csv,.tsv" hidden></label>
+    </div>
+    <div>
+      <fieldset class="bg-choice">
+        <legend class="field-label">Compare against</legend>
+        <label><input type="radio" name="bg" value="proteome" checked> All reviewed proteins of the organism</label>
+        <label><input type="radio" name="bg" value="custom"> My background list, for example every protein detected in the experiment</label>
+      </fieldset>
+      <textarea id="en-bg" rows="6" spellcheck="false" autocomplete="off" aria-label="Background list" disabled></textarea>
+      <label class="btn small" id="en-bg-upload" aria-disabled="true">Upload background<input type="file" id="en-bg-file" accept=".txt,.csv,.tsv" hidden disabled></label>
+    </div>
+  </div>
+  <details class="settings">
+    <summary>Settings</summary>
+    <div class="field-row">
+      <div>
+        <label class="field-label" for="en-iter">Random sets</label>
+        <select id="en-iter">
+          <option value="1000">1,000</option>
+          <option value="10000" selected>10,000</option>
+          <option value="50000">50,000</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="en-seed">Seed</label>
+        <input id="en-seed" type="number" min="1" step="1" value="1">
+      </div>
+      <label class="toggle"><input type="checkbox" id="en-live" checked> Look up IDs that are not in the reviewed reference table on UniProt</label>
+    </div>
+  </details>
+  <div class="actions">
+    <button class="btn primary" id="en-run">Run enrichment</button>
+    <button class="btn quiet" id="en-example">Try an example</button>
+  </div>
+  <div class="results" id="en-results" aria-live="polite"></div>
+</section>
+
+<div class="tooltip" id="tooltip" role="status" hidden></div>
+<script type="module" src="{{ '/assets/js/app.js' | relative_url }}"></script>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title and page.title != site.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <a class="ribbon" href="{{ '/' | relative_url }}" aria-label="KFERQ finder, home">
+        <span class="ribbon-seq" aria-hidden="true">KETAAA<mark class="m m-C"><span class="start" data-code="C">K</span>FERQ</mark>HMDSS</span>
+      </a>
+      <div class="masthead-row">
+        <p class="site-title">KFERQ finder</p>
+        <nav aria-label="Site">
+          <a href="{{ '/' | relative_url }}"{% if page.url == '/' %} aria-current="page"{% endif %}>Finder</a>
+          <a href="{{ '/about/' | relative_url }}"{% if page.url == '/about/' %} aria-current="page"{% endif %}>About</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+  <main class="wrap">
+    {{ content }}
+  </main>
+  <footer class="wrap site-footer">
+    <p>If you use KFERQ finder, please cite Kirchner P, Bourdenx M, et al. Proteome-wide analysis of chaperone-mediated autophagy targeting motifs. <i>PLoS Biol</i> 2019;17:e3000301. <a href="https://doi.org/10.1371/journal.pbio.3000301">doi:10.1371/journal.pbio.3000301</a></p>
+    <p>Sequences you paste are analysed in your browser and never uploaded. <a href="https://github.com/bourdenxlab/kferq-finder">Source code</a> (MIT licence).</p>
+  </footer>
+</body>
+</html>

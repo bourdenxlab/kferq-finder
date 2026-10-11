@@ -1,0 +1,88 @@
+{
+  "organisms": [
+    {
+      "key": "human",
+      "common": "Human",
+      "name": "Homo sapiens",
+      "taxon": 9606,
+      "proteome": "UP000005640",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 20416,
+      "genes": 20652
+    },
+    {
+      "key": "mouse",
+      "common": "Mouse",
+      "name": "Mus musculus",
+      "taxon": 10090,
+      "proteome": "UP000000589",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 17277,
+      "genes": 21860
+    },
+    {
+      "key": "rat",
+      "common": "Rat",
+      "name": "Rattus norvegicus",
+      "taxon": 10116,
+      "proteome": "UP000002494",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 8228,
+      "genes": 21471
+    },
+    {
+      "key": "zebrafish",
+      "common": "Zebrafish",
+      "name": "Danio rerio",
+      "taxon": 7955,
+      "proteome": "UP000000437",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 3385,
+      "genes": 26567
+    },
+    {
+      "key": "fly",
+      "common": "Fruit fly",
+      "name": "Drosophila melanogaster",
+      "taxon": 7227,
+      "proteome": "UP000000803",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 3877,
+      "genes": 13814
+    },
+    {
+      "key": "worm",
+      "common": "Nematode",
+      "name": "Caenorhabditis elegans",
+      "taxon": 6239,
+      "proteome": "UP000001940",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 4487,
+      "genes": 19792
+    },
+    {
+      "key": "yeast",
+      "common": "Budding yeast",
+      "name": "Saccharomyces cerevisiae S288C",
+      "taxon": 559292,
+      "proteome": "UP000002311",
+      "release": "2026_03",
+      "releaseDate": "02-September-2026",
+      "built": "2026-10-11",
+      "reviewed": 6067,
+      "genes": 6066
+    }
+  ]
+}

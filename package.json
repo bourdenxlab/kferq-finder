@@ -1,0 +1,11 @@
+{
+  "name": "kferq-finder",
+  "private": true,
+  "type": "module",
+  "description": "Find KFERQ-like (CMA-targeting) motifs in proteins",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "build-data": "node scripts/build-data.mjs",
+    "serve": "jekyll serve --port 4010"
+  }
+}

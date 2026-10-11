@@ -1,0 +1,11 @@
+title: KFERQ finder
+description: Find KFERQ-like motifs, the pentapeptides that target proteins to chaperone-mediated autophagy, and test whether they are enriched in a protein list.
+markdown: kramdown
+exclude:
+  - scripts
+  - tests
+  - package.json
+  - README.md
+  - node_modules
+  - Gemfile
+  - Gemfile.lock
