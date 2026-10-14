@@ -1,6 +1,7 @@
 import { TYPES, DEFAULT_TYPES, RANK, scan, parseFasta, hasLysine } from "./kferq.js";
 import { loadIndex, loadOrganism, parseIdList, resolveIds, fetchSequences } from "./data.js";
 import { enrichment } from "./enrich.js";
+import { summarySets, combinations, combinationPatterns, combinationName, presence, bestClass, rankOrder, classLabel, upsetSVG, bandsSVG } from "./summary.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -20,6 +21,10 @@ const state = {
   sequences: null,
   ids: null,
   enrichment: null,
+  second: "P", // class ranked right after canonical: "P" phosphorylation- or "K" acetylation-activated
+  view: { sequences: "motifs", ids: "motifs" },
+  figure: "upset", // or "bands"
+  upsetOrder: "rank", // or "size"
 };
 
 const selectedMotifs = (p) => p.motifs.filter((m) => state.types.has(m.type));
@@ -44,11 +49,18 @@ function initClassControls() {
     state.ub = e.target.checked;
     refreshAfterOptionChange();
   });
+  for (const r of document.querySelectorAll('input[name="rank"]')) {
+    r.addEventListener("change", () => {
+      state.second = r.value;
+      refreshAfterOptionChange();
+    });
+  }
 }
 
 function refreshAfterOptionChange() {
   if (state.sequences) renderFinder("sequences");
   if (state.ids) renderFinder("ids");
+  if (state.enrichment) renderEnrichment();
   const stale = $("en-stale");
   if (state.enrichment && stale) {
     const same = state.enrichment.types.join() === [...state.types].sort((a, b) => RANK[a] - RANK[b]).join();
@@ -193,10 +205,20 @@ function renderFinder(mode) {
   }
   if (items.length > SHOW_MAX) notes.push(`<li>Showing the first ${nf(SHOW_MAX)} of ${nf(items.length)} ${noun}. The table download holds all of them.</li>`);
 
-  const rows = items.slice(0, SHOW_MAX).map((p, i) => rowHTML(p, i, mode)).join("");
-  out.innerHTML = `
+  const view = state.view[mode];
+  const header = `
     <p class="summary">${nf(withMotif)} of ${nf(items.length)} ${noun} contain at least one motif of the selected classes (${nf(nMotifs)} ${nMotifs === 1 ? "motif" : "motifs"}).</p>
     ${notes.length ? `<ul class="notes">${notes.join("")}</ul>` : ""}
+    <div class="view-switch" role="group" aria-label="Results view">
+      <button data-action="view" data-view="motifs" aria-pressed="${view === "motifs"}">Motifs</button>
+      <button data-action="view" data-view="summary" aria-pressed="${view === "summary"}">Summary by class</button>
+    </div>`;
+  if (view === "summary") {
+    out.innerHTML = header + summaryHTML(mode);
+    return;
+  }
+  const rows = items.slice(0, SHOW_MAX).map((p, i) => rowHTML(p, i, mode)).join("");
+  out.innerHTML = `${header}
     <div class="actions">
       <button class="btn" data-action="csv">Download table (CSV)</button>
       <button class="btn" data-action="html">Download highlighted sequences (HTML)</button>
@@ -207,17 +229,17 @@ function renderFinder(mode) {
     </table></div>` : ""}`;
 }
 
+function proteinHead(p, mode) {
+  if (mode === "sequences") return `<div class="protein-name">${esc(p.name)}</div>`;
+  const gene = p.genes.split(" ")[0];
+  const badges = (p.reviewed ? "" : ` <span class="badge">unreviewed</span>`) + (p.otherOrganism ? ` <span class="badge">taxon ${p.otherOrganism}</span>` : "");
+  return `<div class="protein-name">${esc(p.name || p.acc)}</div>
+      <div class="protein-meta"><a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry" target="_blank" rel="noopener">${esc(p.acc)}</a>${gene ? ` ${esc(gene)}` : ""}${badges}</div>`;
+}
+
 function rowHTML(p, i, mode) {
   const ms = selectedMotifs(p);
-  let head;
-  if (mode === "sequences") {
-    head = `<div class="protein-name">${esc(p.name)}</div>`;
-  } else {
-    const gene = p.genes.split(" ")[0];
-    const badges = (p.reviewed ? "" : ` <span class="badge">unreviewed</span>`) + (p.otherOrganism ? ` <span class="badge">taxon ${p.otherOrganism}</span>` : "");
-    head = `<div class="protein-name">${esc(p.name || p.acc)}</div>
-      <div class="protein-meta"><a href="https://www.uniprot.org/uniprotkb/${esc(p.acc)}/entry" target="_blank" rel="noopener">${esc(p.acc)}</a>${gene ? ` ${esc(gene)}` : ""}${badges}</div>`;
-  }
+  const head = proteinHead(p, mode);
   const motifs = ms.length ? `<div class="motifs">${ms.map(chipHTML).join("")}</div>` : `<span class="none">${esc(otherText(p))}</span>`;
   return `<tr data-i="${i}"><td>${head}</td><td class="num">${nf(p.length)}</td><td>${motifs}</td>
     <td><button class="linkish" data-action="seq" aria-expanded="false">Show sequence</button></td></tr>`;
@@ -231,6 +253,85 @@ function otherText(p) {
 function chipHTML(m) {
   const ub = state.ub && hasLysine(m.motif) ? `<span class="ub" title="Contains a lysine: can be inactivated by ubiquitination">Ub</span>` : "";
   return `<span class="motif m-${m.type}" title="${esc(TYPE[m.type].name)} motif, residues ${m.start}–${m.start + 4}"><span class="dot"></span><span class="seq">${m.motif}</span><span class="pos">${m.start}</span><span class="code">${m.type}</span>${ub}</span>`;
+}
+
+// ---------------------------------------------------------------- summary by class
+
+const SUMMARY_NOTE = `<p class="hint">Summarises canonical, acetylation- and phosphorylation-activated motifs. Motifs that need both acetylation and phosphorylation are left out: they are theoretically possible but lack experimental evidence. Asparagine motifs are not part of this summary.</p>`;
+
+function figureStyle() {
+  const css = getComputedStyle(document.documentElement);
+  const v = (n) => css.getPropertyValue(n).trim();
+  return {
+    colors: { C: v("--c-C"), K: v("--c-K"), P: v("--c-P") },
+    ink: v("--ink"), ink2: v("--ink-2"), muted: v("--muted"), absent: "#e4e5ea",
+    font: "Atkinson Hyperlegible Next, Helvetica, Arial, sans-serif",
+  };
+}
+
+function figureSVG(items, sets, opts) {
+  const combos = combinations(items, sets);
+  const style = figureStyle();
+  if (state.figure === "bands") return bandsSVG(combos, sets, items.length, style, opts);
+  const ordered = state.upsetOrder === "size"
+    ? combos.filter((c) => c.sets.length).sort((a, b) => b.n - a.n).concat(combos.filter((c) => !c.sets.length))
+    : combos;
+  const setTotals = Object.fromEntries(sets.map((s) => [s, items.filter((p) => p.motifs.some((m) => m.type === s)).length]));
+  return upsetSVG(ordered, sets, setTotals, items.length, style, opts);
+}
+
+function figureControls(scope) {
+  const radio = (setting, value, label) =>
+    `<label><input type="radio" name="${setting}-${scope}" value="${value}" data-setting="${setting}"${state[setting] === value ? " checked" : ""}> ${label}</label>`;
+  return `<div class="fig-controls">
+      <div role="radiogroup" aria-label="Figure"><span class="ctl-label">Figure</span>${radio("figure", "upset", "UpSet plot")}${radio("figure", "bands", "Stacked bands")}</div>
+      ${state.figure === "upset" ? `<div role="radiogroup" aria-label="Column order"><span class="ctl-label">Columns</span>${radio("upsetOrder", "rank", "By rank")}${radio("upsetOrder", "size", "By size")}</div>` : ""}
+    </div>`;
+}
+
+const comboDots = (pattern, sets) => `<span class="combo-dots" aria-hidden="true">${sets.map((s) => `<i class="m-${s}${pattern.includes(s) ? " on" : ""}"></i>`).join("")}</span>`;
+
+// groups: [{ label, items }]; one count column per group
+function comboTable(sets, groups) {
+  const counts = groups.map((g) => combinations(g.items, sets));
+  const rows = combinationPatterns(sets).map((pattern, i) => `<tr><td>${comboDots(pattern, sets)}</td><td>${esc(combinationName(pattern))}</td>${counts
+    .map((c, g) => `<td class="num">${nf(c[i].n)} <span class="share">(${pct(c[i].n / Math.max(1, groups[g].items.length))})</span></td>`).join("")}</tr>`).join("");
+  return `<div class="table-scroll"><table class="combo-table">
+    <thead><tr><th><span class="visually-hidden">Classes</span></th><th>Combination</th>${groups.map((g) => `<th class="num">${esc(g.label)}</th>`).join("")}</tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+function yesNoTable(items, sets, mode) {
+  const rows = items.slice(0, SHOW_MAX).map((p) => {
+    const has = presence(p, sets);
+    const best = bestClass(p, sets, state.second);
+    return `<tr><td>${proteinHead(p, mode)}</td><td class="num">${nf(p.length)}</td>${sets
+      .map((s) => `<td>${has[s] ? `<span class="yes m-${s}"><i></i>Yes</span>` : `<span class="no">No</span>`}</td>`).join("")}<td>${best === "none" ? "None" : classLabel(best)}</td></tr>`;
+  }).join("");
+  const more = items.length > SHOW_MAX ? `<p class="hint">Showing the first ${nf(SHOW_MAX)} of ${nf(items.length)}. The table download holds all of them.</p>` : "";
+  return `<div class="table-scroll"><table>
+    <thead><tr><th>${mode === "sequences" ? "Sequence" : "Protein"}</th><th class="num">Length</th>${sets.map((s) => `<th>${classLabel(s)}</th>`).join("")}<th>Single class</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>${more}`;
+}
+
+function summaryHTML(mode) {
+  const items = state[mode].items;
+  const sets = summarySets([...state.types], state.second);
+  if (!sets.length) return `<p class="error">Select canonical, acetylation- or phosphorylation-activated motifs to see this summary.</p>${SUMMARY_NOTE}`;
+  return `${figureControls(mode)}
+    <div class="summary-fig">${figureSVG(items, sets)}</div>
+    <div class="actions">
+      <button class="btn" data-action="fig-svg">Download figure (SVG)</button>
+      <button class="btn" data-action="fig-png">Download figure (PNG)</button>
+      <button class="btn" data-action="yesno-csv">Download yes/no table (CSV)</button>
+      <button class="btn" data-action="combo-csv">Download combinations (CSV)</button>
+    </div>
+    <h3 class="section">Combinations</h3>
+    ${comboTable(sets, [{ label: mode === "sequences" ? "Sequences" : "Proteins", items }])}
+    <h3 class="section">By ${mode === "sequences" ? "sequence" : "protein"}</h3>
+    <p class="hint">Yes or no for each class. Single class is the best class in the rank chosen above, the grouping used in the 2019 paper.</p>
+    ${yesNoTable(items, sets, mode)}
+    ${SUMMARY_NOTE}`;
 }
 
 // residues in lines of 60 and blocks of 10, motif residues highlighted by their best class
@@ -320,7 +421,11 @@ const toCsv = (rows) => rows.map((r) => r.map(csvCell).join(",")).join("\n") + "
 const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
 
 function download(name, text, type) {
-  const url = URL.createObjectURL(new Blob([text], { type }));
+  downloadBlob(name, new Blob([text], { type }));
+}
+
+function downloadBlob(name, blob) {
+  const url = URL.createObjectURL(blob);
   const a = Object.assign(document.createElement("a"), { href: url, download: name });
   document.body.append(a);
   a.click();
@@ -342,6 +447,55 @@ function finderCsv(mode) {
   }
   if (mode === "ids") for (const id of st.notFound) rows.push([id, "", "", "", "", "", "", "", "", "", "", "", "ID not found"]);
   download(`KFERQ_finder_${mode}_${stamp()}.csv`, toCsv(rows), "text/csv");
+}
+
+async function downloadFigure(items, sets, format, base) {
+  const svg = figureSVG(items, sets, { exportable: true });
+  const name = `${base}_${state.figure === "bands" ? "bands" : "upset"}_${stamp()}`;
+  if (format === "svg") return download(`${name}.svg`, svg, "image/svg+xml");
+  // PNG at 3x for print; text falls back to Helvetica/Arial outside the page
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const scale = 3, canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth * scale;
+    canvas.height = img.naturalHeight * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0);
+    downloadBlob(`${name}.png`, await new Promise((r) => canvas.toBlob(r, "image/png")));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+const CLASS_COLUMN = { C: "canonical", K: "acetylation_activated", P: "phosphorylation_activated" };
+
+function yesNoCsv(mode) {
+  const st = state[mode];
+  const sets = summarySets([...state.types], state.second);
+  const head = mode === "sequences" ? ["sequence_name", "length"] : ["accession", "status", "gene_names", "protein_name", "length"];
+  const rows = [[...head, ...sets.map((s) => CLASS_COLUMN[s]), "single_class"]];
+  for (const p of st.items) {
+    const base = mode === "sequences" ? [p.name, p.length] : [p.acc, p.reviewed ? "reviewed" : "unreviewed", p.genes, p.name, p.length];
+    const has = presence(p, sets);
+    const best = bestClass(p, sets, state.second);
+    rows.push([...base, ...sets.map((s) => (has[s] ? "yes" : "no")), best === "none" ? "none" : CLASS_COLUMN[best]]);
+  }
+  if (mode === "ids") for (const id of st.notFound) rows.push([id, "", "", "", "", ...sets.map(() => ""), "ID not found"]);
+  download(`KFERQ_finder_${mode}_by_class_${stamp()}.csv`, toCsv(rows), "text/csv");
+}
+
+function comboCsv(groups, sets, base) {
+  const counts = groups.map((g) => combinations(g.items, sets));
+  const rows = [["combination", ...sets.map((s) => CLASS_COLUMN[s]), ...groups.flatMap((g) => (g.key ? [`${g.key}_proteins`, `${g.key}_share`] : ["proteins", "share"]))]];
+  combinationPatterns(sets).forEach((pattern, i) => {
+    rows.push([combinationName(pattern), ...sets.map((s) => (pattern.includes(s) ? "yes" : "no")),
+      ...counts.flatMap((c, g) => [c[i].n, c[i].n / Math.max(1, groups[g].items.length)])]);
+  });
+  download(`${base}_combinations_${stamp()}.csv`, toCsv(rows), "text/csv");
 }
 
 const exportCss = () => `body{font:15px/1.5 system-ui,sans-serif;color:#1a1c23;max-width:980px;margin:24px auto;padding:0 16px}
@@ -526,11 +680,6 @@ function histogramSVG(counts, n, domain, obsFrac) {
   </svg>`;
 }
 
-function topClass(p, types) {
-  const present = new Set(p.motifs.map((m) => m.type));
-  return types.find((t) => present.has(t)) || "none";
-}
-
 function renderEnrichment() {
   const E = state.enrichment, r = E.result;
   const names = E.types.map((c) => TYPE[c].short);
@@ -547,10 +696,11 @@ function renderEnrichment() {
   if (r.bins === 1) notes.push(`<li class="warn">The background is too small to split by length (under 50 proteins), so length-matched sets are the same as random sets.</li>`);
   if (r.replacementBins) notes.push(`<li class="warn">In ${r.replacementBins} length ${r.replacementBins === 1 ? "bin" : "bins"} your list has more proteins than the background, so ${r.replacementBins === 1 ? "that bin was" : "those bins were"} drawn with replacement.</li>`);
 
-  // all selected classes, counted once under their best class
-  const breakdown = [...E.types, "none"].map((t) => {
-    const nl = E.list.filter((p) => topClass(p, E.types) === t).length;
-    const nb = E.background.filter((p) => topClass(p, E.types) === t).length;
+  // all selected classes, counted once under their best class in the chosen rank
+  const ranked = rankOrder(state.second).filter((t) => E.types.includes(t));
+  const breakdown = [...ranked, "none"].map((t) => {
+    const nl = E.list.filter((p) => bestClass(p, E.types, state.second) === t).length;
+    const nb = E.background.filter((p) => bestClass(p, E.types, state.second) === t).length;
     const label = t === "none" ? "None of the selected classes" : `<span class="swatch m-${t}"></span>${esc(TYPE[t].name)}`;
     return `<tr><td>${label}</td><td class="num">${pct(nl / E.list.length)} (${nf(nl)})</td><td class="num">${pct(nb / E.background.length)} (${nf(nb)})</td></tr>`;
   }).join("");
@@ -588,8 +738,9 @@ function renderEnrichment() {
       <dt>Motif classes</dt><dd>${E.types.map((t) => esc(TYPE[t].name)).join(", ")}</dd>
       <dt>Random sets</dt><dd>${nf(r.iterations)}, seed ${r.seed}</dd>
     </dl>
+    ${enrichmentSummaryHTML(E)}
     <h3 class="section">Proteins by best motif class</h3>
-    <p class="hint">Each protein is counted once, under its best-characterised class.</p>
+    <p class="hint">Each protein is counted once, under its best class in the rank chosen above.</p>
     <div class="table-scroll"><table class="compare">
       <thead><tr><th>Class</th><th class="num">Your list</th><th class="num">Background</th></tr></thead>
       <tbody>${breakdown}</tbody>
@@ -598,6 +749,22 @@ function renderEnrichment() {
       <button class="btn" data-action="en-summary">Download summary (CSV)</button>
       <button class="btn" data-action="en-proteins">Download your proteins (CSV)</button>
     </div>`;
+}
+
+function enrichmentSummaryHTML(E) {
+  const sets = summarySets(E.types, state.second);
+  if (!sets.length) return "";
+  return `<h3 class="section">Combinations of classes</h3>
+    <p class="hint">Yes or no for each class, so a protein with several classes is counted in the combination it has. The figure shows your list.</p>
+    ${figureControls("en")}
+    <div class="summary-fig">${figureSVG(E.list, sets)}</div>
+    ${comboTable(sets, [{ label: "Your list", items: E.list }, { label: "Background", items: E.background }])}
+    <div class="actions">
+      <button class="btn" data-action="fig-svg">Download figure (SVG)</button>
+      <button class="btn" data-action="fig-png">Download figure (PNG)</button>
+      <button class="btn" data-action="combo-csv">Download combinations (CSV)</button>
+    </div>
+    ${SUMMARY_NOTE}`;
 }
 
 function enrichmentSummaryCsv() {
@@ -636,14 +803,16 @@ function enrichmentSummaryCsv() {
 function enrichmentProteinsCsv() {
   const E = state.enrichment;
   const tested = new Set(E.list.map((p) => p.acc));
-  const rows = [["accession", "status", "gene_names", "protein_name", "length", "has_selected_motif", "best_class", "selected_motifs", "in_test"]];
+  const sets = summarySets(E.types, state.second);
+  const rows = [["accession", "status", "gene_names", "protein_name", "length", "has_selected_motif", ...sets.map((s) => CLASS_COLUMN[s]), "best_class", "selected_motifs", "in_test"]];
   for (const p of E.listRes.proteins) {
     const ms = p.motifs.filter((m) => E.types.includes(m.type));
+    const has = presence(p, sets);
     const why = tested.has(p.acc) ? "yes" : p.otherOrganism ? "no: other organism" : "no: not in reviewed reference table";
-    rows.push([p.acc, p.reviewed ? "reviewed" : "unreviewed", p.genes, p.name, p.length, ms.length ? "yes" : "no", topClass(p, E.types),
-      ms.map((m) => `${m.motif}@${m.start}:${m.type}`).join(" "), why]);
+    rows.push([p.acc, p.reviewed ? "reviewed" : "unreviewed", p.genes, p.name, p.length, ms.length ? "yes" : "no", ...sets.map((s) => (has[s] ? "yes" : "no")),
+      bestClass(p, E.types, state.second), ms.map((m) => `${m.motif}@${m.start}:${m.type}`).join(" "), why]);
   }
-  for (const id of E.listRes.notFound) rows.push([id, "", "", "", "", "", "", "", "no: ID not found"]);
+  for (const id of E.listRes.notFound) rows.push([id, "", "", "", "", "", ...sets.map(() => ""), "", "", "no: ID not found"]);
   download(`KFERQ_finder_enrichment_proteins_${stamp()}.csv`, toCsv(rows), "text/csv");
 }
 
@@ -746,6 +915,26 @@ function init() {
       if (btn.dataset.action === "seq") toggleSequence(btn, mode);
       if (btn.dataset.action === "csv") finderCsv(mode);
       if (btn.dataset.action === "html") finderHtml(mode, btn);
+      if (btn.dataset.action === "view") {
+        state.view[mode] = btn.dataset.view;
+        renderFinder(mode);
+      }
+      const sets = summarySets([...state.types], state.second);
+      if (btn.dataset.action === "fig-svg") downloadFigure(state[mode].items, sets, "svg", `KFERQ_finder_${mode}`);
+      if (btn.dataset.action === "fig-png") downloadFigure(state[mode].items, sets, "png", `KFERQ_finder_${mode}`);
+      if (btn.dataset.action === "yesno-csv") yesNoCsv(mode);
+      if (btn.dataset.action === "combo-csv") comboCsv([{ key: "", items: state[mode].items }], sets, `KFERQ_finder_${mode}`);
+    });
+  }
+  // figure style and column order are shared by every summary on the page
+  for (const id of ["seq-results", "ids-results", "en-results"]) {
+    $(id).addEventListener("change", (e) => {
+      const setting = e.target.dataset.setting;
+      if (!setting) return;
+      state[setting] = e.target.value;
+      for (const mode of ["sequences", "ids"]) if (state[mode] && state.view[mode] === "summary") renderFinder(mode);
+      if (state.enrichment) renderEnrichment();
+      document.querySelector(`input[name="${setting}-${id === "seq-results" ? "sequences" : id === "ids-results" ? "ids" : "en"}"][value="${e.target.value}"]`)?.focus();
     });
   }
   $("en-results").addEventListener("click", (e) => {
@@ -753,6 +942,10 @@ function init() {
     if (!btn) return;
     if (btn.dataset.action === "en-summary") enrichmentSummaryCsv();
     if (btn.dataset.action === "en-proteins") enrichmentProteinsCsv();
+    const E = state.enrichment, sets = summarySets(E.types, state.second);
+    if (btn.dataset.action === "fig-svg") downloadFigure(E.list, sets, "svg", "KFERQ_finder_enrichment_list");
+    if (btn.dataset.action === "fig-png") downloadFigure(E.list, sets, "png", "KFERQ_finder_enrichment_list");
+    if (btn.dataset.action === "combo-csv") comboCsv([{ key: "list", items: E.list }, { key: "background", items: E.background }], sets, "KFERQ_finder_enrichment");
   });
 }
 

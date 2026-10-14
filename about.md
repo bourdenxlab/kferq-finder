@@ -35,6 +35,15 @@ Motifs that contain a lysine can be inactivated when that lysine is ubiquitinate
 
 These rules generate the same 16,800 pentapeptides as the original 2018 KFERQ finder. The test suite checks this on every change.
 
+## Summary by class
+
+The "Summary by class" view answers a simpler question than the motif list: does each protein carry a canonical, an acetylation-activated or a phosphorylation-activated motif, yes or no? Every protein falls into exactly one combination of the three, from all three classes to none, and the view counts the proteins in each.
+
+- **No single-class cut-off.** The 2019 paper grouped each protein under its best class only, so a protein with canonical and acetylation-activated motifs counted as canonical. Here every class a protein carries is recorded. The single-class grouping is still reported alongside.
+- **Rank.** Canonical motifs always rank first. You choose whether phosphorylation- or acetylation-activated motifs come next. The rank sets the order of combinations in tables and figures and decides the single class.
+- **Figures.** An UpSet plot ([Lex et al. 2014](https://doi.org/10.1109/TVCG.2014.2346248)) gives each combination its own column, with the classes marked by dots and the count on the bar. The stacked-bands figure gives each combination a band whose height is proportional to its proteins, with classes packed to the left. Both download as SVG or PNG.
+- **Left out.** Motifs that need both acetylation and phosphorylation are theoretically possible, but there is no experimental evidence yet that they target proteins, so they are not counted. Asparagine motifs are not part of this summary either.
+
 ## Protein data
 
 Precomputed tables hold every reviewed (Swiss-Prot) entry of each organism's UniProt reference proteome. IDs that are not in a table can be looked up live on UniProt, and their motifs are computed in your browser.
@@ -60,6 +69,7 @@ The seed setting makes a run reproducible: the same lists, settings and seed alw
 - Runs in the browser. There is no server to go down, and pasted sequences are never uploaded.
 - Searches by gene name as well as accession, for seven organisms, with tables built from a current UniProt release.
 - Adds the enrichment test.
+- Adds a summary of motif classes per protein (yes or no for each class), with UpSet and stacked-bands figures.
 - Fixes problems in the original: very short sequences, the lysine option on pasted sequences, CSV files without a header row, and identical colours for two motif classes.
 
 ## Citation and credits

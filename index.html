@@ -12,6 +12,11 @@ title: KFERQ finder
   <legend>Motif classes</legend>
   <div id="class-chips" class="class-chips"></div>
   <label class="toggle"><input type="checkbox" id="flag-ub"> Mark motifs that contain a lysine (can be inactivated by ubiquitination)</label>
+  <div class="rank-choice" role="radiogroup" aria-labelledby="rank-label">
+    <span id="rank-label">After canonical, rank</span>
+    <label><input type="radio" name="rank" value="P" checked> phosphorylation-activated first</label>
+    <label><input type="radio" name="rank" value="K"> acetylation-activated first</label>
+  </div>
 </fieldset>
 
 <section id="panel-sequences" role="tabpanel" aria-labelledby="tab-sequences" class="panel">
